@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<!DOCTYPE html>
+<html>
+<head>
+	<title>the Epic Storm -- Calculator</title>
+	<script type="text/javascript" src="./jsbayes/jsbayes.js"></script>
+</head>
+<body>
+
+</body>
+</html>
+<script>
+	function brainstorm(x, y)
+	{
+		return 1.0 - (((x - y) / x) * ((x - y - 1) / (x - 1) * ((x - y - 2) / (x - 2))));
+	}
+	function ponder(x,y)
+	{
+		return 1.0 - ((((x - y) / x) * (((x - y) / x) * ((x - y - 1) / (x - 1) * ((x - y - 2) / (x - 2))))));
+	}
+	function joint(cardA, cardB, totalCards)
+	{
+		return 6.0 * cardA / totalCards * cardB / (totalCards - 1) - looks * cardA / totalCards * cardB / (totalCards - 1) * (cardA - 1) / (totalCards - 2) - looks * cardA / totalCards * cardB / (totalCards - 1) * (cardB - 1) / (totalCards - 2)
+	}
+	function threeCards(cardA, cardB, cardC, totalCards)
+	{
+		return 6 * cardA * cardB * cardC / (totalCards * (totalCards - 1) * (totalCards - 2));
+	}
+	function oneLookPonder(x,y)
+	{
+		return y/(x-2) + y/(x);
+	}
+	function oneLookBrainstorm(x,y)
+	{
+		return y/(x-2);
+	}
+	function calculate(cards, wins, ponders, preordains, brainstorms, blueMana)
+	{
+		var cantripNetwork = jsbayes.newGraph();
+		var n1 = cantripNetwork.addNode('A', ['win', 'ponder', 'preordain', 'brainstorm', 'miss']);
+		var n2 = cantripNetwork.addNode('B', ['win', 'ponder', 'preordain', 'brainstorm', 'miss']);
+		var n3 = cantripNetwork.addNode('C', ['win', 'ponder', 'preordain', 'brainstorm', 'miss']);
+		var n4 = cantripNetwork.addNode('D', ['win', 'miss']);
+
+		n2.addParent(n1);
+		n3.addParent(n2);
+		n3.addParent(n1);
+		n4.addParent(n3);
+		n4.addParent(n2);
+
+		n1.cpt = [
+				brainstorm(cards, wins),
+				brainstorm(cards, ponders) - joint(ponders,wins, cards),
+				brainstorm(cards, preordains) - joint(preordains, wins, cards) - joint(preordains, ponders, cards) + threeCards(preordains, ponders, wins, totalCards),
+				brainstorm(cards, brainstorms) - joint(brainstorms, wins, cards) - joint(brainstorms, ponders, cards) - joint(brainstorms, preordains, cards) + threeCards(brainstorms, ponders, wins) + threeCards(brainstorms, preordains, wins),
+
+				brainstorm(cards, 53 - wins, ponders, preordains, brainstorms)
+			];
+
+		var ponderXwin = oneLookPonder(cards-1, wins);
+		var ponderXponder = oneLookPonder(cards-1, ponders-1);
+		var ponderXpreordain = oneLookPonder(cards-1, preordains);
+		var ponderXbrainstorm = oneLookPonder(cards-1, brainstorms);
+		var ponderXmiss = 1 - ponderXwin - ponderXpreordain - ponderXponder	- ponderXpreordain;
+
+		var preordainXwin = oneLookBrainstorm(cards-1, wins);
+		var preordainXponder = oneLookBrainstorm(cards -1, ponders);
+		var preordainXpreordain = oneLookbrainstorm(cards-1, preordains-1);
+		var preordainXbrainstorm = oneLookBrainstorm(cards-1, brainstorms);
+		var preordainXmiss = 1 - preordainXwin - preordainXpreordain - preordainXponder	- preordainXpreordain;
+
+		var brainstormXwin = oneLookBrainstorm(cards-1, wins);
+		var brainstormXponder = oneLookBrainstorm(cards -1, ponders);
+		var brainstormXpreordain = oneLookbrainstorm(cards-1, preordains);
+		var brainstormXbrainstorm = oneLookBrainstorm(cards-1, brainstorms-1);
+		var brainstormXmiss = 1 - brainstormXwin - brainstormXpreordain - brainstormXponder	- brainstormXpreordain;
+
+
+		n2.cpt = [
+					[1,0,0,0,0],
+					[ponderXwin, ponderXponder, ponderXpreordain, ponderXbrainstorm, ponderXmiss],
+					[preordainXwin, preordainXponder, preordainXpreordain, preordainXbrainstorm, preordainXmiss],
+					[brainstormXwin, brainstormXponder, brainstormXpreordain, brainstormXbrainstorm, brainstormXmiss],
+					[0,0,0,0,1]
+				];
+
+		var ponderShuffle =  -1 * (1 - (brainstorm(cards-3,(ponders+preordains+brainstorms-1))));
+		var ponderXponderXwin = ponderShuffle * (ponder(cards-2, wins)) + (1-ponderShuffle) * oneLookPonder(cards-2, wins);
+		var ponderXponderXponder = ponderShuffle * (ponder(cards-2, ponders-2) - joint(ponders-2, wins, cards - 2)) + (1-ponderShuffle) * oneLookPonder(cards-2, ponders-2);
+		var ponderXponderXpreordain = ponderShuffle * (ponder(cards-2, preordains) + (1-ponderShuffle) - joint(preordains, wins, cards-2) - joint(preordains, ponders-2, cards - 2) + threeCards(preodains, ponders-2, wins, cards-2)) + (1-ponderShuffle) * oneLookPonder(cards-2, preordains);
+		var ponderXponderXbrainstorm = ponderShuffle * (ponder(cards-2, brainstorms) - joint(brainstorms, wins, cards-2) - joint(brainstorms, ponders-2, cards-2) - joint(brainstorms, preordains, wins) + threeCards(brainstorms, ponders-2, wins, totalCards-2) + threeCards(brainstorms, preordains, wins, cards-2)) + (1-ponderShuffle) * oneLookPonder(cards-2, brainstorms);
+		var ponderXponderXmiss = 1 - ponderXponderXwin - ponderXponderXpreordain - ponderXponderXponder	- ponderXponderXpreordain;
+
+		var ponderXpreordainXwin = ponderShuffle * (brainstorm(cards-2, wins)) + (1-ponderShuffle) * oneLookBrainstorm(cards-2, wins);
+		var ponderXpreordainXponder = ponderShuffle * (brainstorm(cards-2, ponders-1) - joint(ponders-1, wins, cards - 2)) + (1-ponderShuffle) * oneLookBrainstorm(cards-2, ponders-1);
+		var ponderXpreordainXpreordain = ponderShuffle * (brainstorm(cards-2, preordains-1) + (1-ponderShuffle) - joint(preordains-1, wins, cards-2) - joint(preordains-1, ponders-1, cards-2) + threeCards(preodains-1, ponders-1, wins, cards-2)) + (1-ponderShuffle) * oneLookBrainstorm(cards-2, preordains-1);
+		var ponderXpreordainXbrainstorm = ponderShuffle * (brainstorm(cards-2, brainstorms) - joint(brainstorms, wins, cards-2) - joint(brainstorms, ponders-1, cards-2) - joint(brainstorms, preordains-1, wins) + threeCards(brainstorms, ponders-1, wins, totalCards-2) + threeCards(brainstorms, preordains-1, wins, cards-2)) + (1-ponderShuffle) * oneLookBrainstorm(cards-2, brainstorms);
+		var ponderXpreordainXmiss = 1 - ponderXpreordainXwin - ponderXpreordainXpreordain - ponderXpreordainXponder	- ponderXpreordainXpreordain;
+
+		var ponderXbrainstormXwin = ponderShuffle * (brainstorm(cards-2, wins)) + (1-ponderShuffle) * oneLookBrainstorm(cards-2, wins);
+		var ponderXbrainstormXponder = ponderShuffle * (brainstorm(cards-2, ponders-1) - joint(ponders-1, wins, cards - 2)) + (1-ponderShuffle) * oneLookBrainstorm(cards-2, ponders-1);
+		var ponderXbrainstormXpreordain = ponderShuffle * (brainstorm(cards-2, preordains) + (1-ponderShuffle) - joint(preordains, wins, cards-2) - joint(preordains, ponders-1, cards-2) + threeCards(preodains, ponders-1, wins, cards-2)) + (1-ponderShuffle) * oneLookBrainstorm(cards-2, preordains);
+		var ponderXbrainstormXbrainstorm = ponderShuffle * (brainstorm(cards-2, brainstorms-1) - joint(brainstorms-1, wins, cards-2) - joint(brainstorms-1, ponders-1, cards-2) - joint(brainstorms-1, preordains, wins) + threeCards(brainstorms-1, ponders-1, wins, totalCards-2) + threeCards(brainstorms-1, preordains, wins, cards-2)) + (1-ponderShuffle) * oneLookBrainstorm(cards-2, brainstorms-1);
+		var ponderXbrainstormXmiss = 1 - ponderXbrainstormXwin - ponderXbrainstormXpreordain - ponderXbrainstormXponder	- ponderXbrainstormXpreordain;
+
+
+		var bottomBoth;
+		var bottomOne;
+		var preordainXponderXwin; 
+
+		n3.cpt = [
+				[1.0,0.0,0.0,0.0,0.0], //win, win
+				[0.0,0.0,0.0,0.0,0.0], //win, ponder
+				[0.0,0.0,0.0,0.0,0.0], //win, preordain
+				[0.0,0.0,0.0,0.0,0.0], //win, brainstorm
+				[0.0,0.0,0.0,0.0,0.0], //win, miss
+				[1.0,0.0,0.0,0.0,0.0], //ponder, win
+				[ponderXponderXwin, ponderXponderXponder, ponderXponderXpreordain, ponderXponderXbrainstorm, ponderXponderXmiss], //ponder, ponder
+				[ponderXpreordainXwin, ponderXpreordainXponder, ponderXpreordainXpreordain, ponderXpreordainXbrainstorm, ponderXpreordainXmiss], //ponder, preordain
+				[ponderXbrainstormXwin, ponderXbrainstormXponder, ponderXbrainstormXpreordain, ponderXbrainstormXbrainstorm, ponderXbrainstormXmiss], //ponder, brainstorm
+				[0.0,0.0,0.0,0.0,1.0], //ponder, miss
+				[1.0,0.0,0.0,0.0,0.0], //preordain, win
+				[], //preordain, ponder
+				[], //preordain, preordain
+				[], //preordain, brainstorm
+				[0.0,0.0,0.0,0.0,1.0], //preordain, miss
+				[1.0,0.0,0.0,0.0,0.0], //brainstorm, win
+				[], //brainstorm, ponder
+				[], //brainstorm, preordain
+				[], //brainstorm, brainstorm
+				[0.0,0.0,0.0,0.0,1.0], //brainstorm, miss
+				[0.0,0.0,0.0,0.0,0.0], //miss, win
+				[0.0,0.0,0.0,0.0,0.0], //miss, ponder
+				[0.0,0.0,0.0,0.0,0.0], //miss, preordain
+				[0.0,0.0,0.0,0.0,0.0], //miss, brainstorm
+				[0.0,0.0,0.0,0.0,1.0]  //miss, miss
+			];
+
+	}
+</script>
