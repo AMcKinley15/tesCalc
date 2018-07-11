@@ -4,7 +4,6 @@
 <head>
 	<title>the Epic Storm -- Calculator</title>
 	<meta charset="utf-8">
-	<script type="text/javascript" src="jsbayes/jsbayes.js"></script>
 	<style>
 		td{
 			text-align: center;
@@ -58,17 +57,14 @@
 		var brainstorms = document.getElementById("brainstorms").value;
 		var blueMana = document.getElementById("blue").value;
 
-		console.log(first + "," + cards + "," + wins + "," +ponders + "," +preordains + "," +brainstorms + "," +blueMana);
-
-		var prob = calculate(first, cards, wins, ponders, preordains, brainstorms, blueMana);
-		console.log(prob);
+		var prob = calculate(parseInt(first), parseInt(cards), parseInt(wins), parseInt(ponders), parseInt(preordains), parseInt(brainstorms), parseInt(blueMana));
 
 		prob *= 100
 		var stringProb = "" + prob;
-		//stringProb = stringProb.substring(0,5);
+		stringProb = stringProb.substring(0,5);
 		var outputArea = document.getElementById("output");
 
-		outputArea.append("Probability of winning is: " + stringProb + "%");
+		outputArea.innerHTML = "<p>Probability of winning is: " + stringProb + "%</p>";
 
 	}
 	function brainstorm(x, y)
@@ -151,14 +147,6 @@
 	}
 	function calculate(firstCantrip, cards, wins, ponders, preordains, brainstorms, blueMana)
 	{
-		console.log(firstCantrip + "," + cards + "," + wins + "," +ponders + "," +preordains + "," +brainstorms + "," +blueMana);
-
-		// var cantripNetwork = jsbayes.newGraph();
-		// var n0 = cantripNetwork.addNode("head", ['ponder', 'preordain', 'brainstorm']);
-		// var n1 = cantripNetwork.addNode('A', ['win', 'ponder', 'preordain', 'brainstorm', 'miss']);
-		// var n2 = cantripNetwork.addNode('B', ['win', 'ponder', 'preordain', 'brainstorm', 'miss']);
-		// var n3 = cantripNetwork.addNode('C', ['win', 'ponder', 'preordain', 'brainstorm', 'miss']);
-		// var n4 = cantripNetwork.addNode('D', ['win', 'miss']);
 
 		var n0 = {name: "head"};
 		var n1 = {name: "A"};
@@ -170,14 +158,6 @@
 		n2.parents = [n0,n1];
 		n3.parents = [n1,n2];
 		n4.parents = [n2,n3];
-
-		// n1.addParent(n0)
-		// n2.addParent(n0);
-		// n2.addParent(n1);
-		// n3.addParent(n1);
-		// n3.addParent(n2);
-		// n4.addParent(n2);
-		// n4.addParent(n3);
 
 		n0.cpt = [.34,.33,.33];
 
@@ -285,44 +265,6 @@
 		var brainstormXponder = makeSetBrainstorm(ponder, oneLookPonder, cards, wins, ponders-1, preordains, brainstorms-1);
 		var brainstormXpreordain = makeSetBrainstorm(brainstorm, oneLookBrainstorm, cards, wins, ponders, preordains-1, brainstorms-1);
 		var brainstormXbrainstorm = makeSetBrainstorm(brainstorm, oneLookBrainstorm, cards, wins, ponders, preordains, brainstorms-2);
-
-		// n4.setCpt([
-				
-		// 				[1.0,0.0], //win, win
-		// 				[0.0,0.0], //win, ponder
-		// 				[0.0,0.0], //win, preordain
-		// 				[0.0,0.0], //win, brainstorm
-		// 				[0.0,0.0], //win, miss
-					
-						
-		// 				[1.0,0.0], //ponder, win
-		// 				[ponderXponder[0], ponderXponder[4]], //ponder, ponder
-		// 				[ponderXpreordain[0], ponderXpreordain[4]], //ponder, preordain
-		// 				[ponderXbrainstorm[0], ponderXbrainstorm[4]], //ponder, brainstorm
-		// 				[0.0,1.0], //ponder, miss
-					
-					
-		// 				[1.0,0.0], //preordain, win
-		// 				[preordainXponder[0], preordainXponder[4]], //preordain, ponder
-		// 				[preordainXpreordain[0], preordainXpreordain[4]], //preordain, preordain
-		// 				[preordainXbrainstorm[0], preordainXbrainstorm[4]], //preordain, brainstorm
-		// 				[0.0,1.0], //preordain, miss
-					
-					
-		// 				[1.0,0.0], //brainstorm, win
-		// 				[brainstormXponder[0], brainstormXponder[4]], //brainstorm, ponder
-		// 				[brainstormXpreordain[0], brainstormXpreordain[4]], //brainstorm, preordain
-		// 				[brainstormXbrainstorm[0], brainstormXbrainstorm[4]], //brainstorm, brainstorm
-		// 				[0.0,1.0], //brainstorm, miss
-					
-					
-		// 				[0.0,0.0], //miss, win
-		// 				[0.0,0.0], //miss, ponder
-		// 				[0.0,0.0], //miss, preordain
-		// 				[0.0,0.0], //miss, brainstorm
-		// 				[0.0,1.0]  //miss, miss
-		// 		]);
-		// console.log(n4.cpt);
 		n4.cpt = [
 					[
 						[1.0,0.0], //win, win
@@ -395,7 +337,6 @@
 						if(flag)
 						{
 							network[j].value = network[j].cpt[parents[0].value][parents[1].value].length-1;
-							//console.log(sum + "match" + rand);
 						}
 					}
 					else
@@ -410,11 +351,11 @@
 								flag = false;
 								break;
 							}
+
 						}
 						if(flag)
 						{
 							network[j].value = network[j].cpt[parents[0].value].length-1;
-							//console.log(sum + "match" + rand);
 						}
 					}
 				}
